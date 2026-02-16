@@ -1,7 +1,7 @@
 import { auth, db } from "./firebase.js";
 import {
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
@@ -22,8 +22,18 @@ const appView = document.getElementById("appView");
 
 loginBtn.onclick = async () => {
   const provider = new GoogleAuthProvider();
-  await signInWithPopup(auth, provider);
+  await signInWithRedirect(auth, provider);
 };
+
+getRedirectResult(auth)
+  .then(result => {
+    if (result) {
+      console.log("Login completado vía redirect");
+    }
+  })
+  .catch(error => {
+    console.error(error);
+  });
 
 onAuthStateChanged(auth, user => {
   if (!user) return;
