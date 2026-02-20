@@ -2,7 +2,10 @@ import { auth, db } from "./firebase.js";
 import {
   GoogleAuthProvider,
   signInWithRedirect,
-  onAuthStateChanged
+  onAuthStateChanged,
+  getRedirectResult,
+  setPersistence,
+  browserLocalPersistence,
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
 import {
@@ -20,28 +23,72 @@ const loginBtn = document.getElementById("loginBtn");
 const loginView = document.getElementById("loginView");
 const appView = document.getElementById("appView");
 
+(async () => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    console.log("Persistencia configurada");
+
+    const result = await getRedirectResult(auth);
+    console.log("Resultado redirect:", result);
+
+  } catch (error) {
+    console.error("Error redirect:", error);
+  }
+
+  onAuthStateChanged(auth, user => {
+    console.log("Auth state changed:", user);
+
+    if (!user) return;
+
+    uid = user.uid;
+    loginView.classList.add("d-none");
+    appView.classList.remove("d-none");
+    loadTrackers();
+  });
+})();
+
+function showError(input, label, message) {
+  if (!input || !label) return;
+
+  // Mostrar mensaje
+  label.innerText = message;
+  label.style.display = "block";
+
+  // Estilo visual
+  input.classList.add("is-invalid");
+
+  // Enfocar automáticamente
+  input.focus();
+
+  // Animación ligera
+  input.classList.remove("input-shake");
+  void input.offsetWidth; // reinicia animación
+  input.classList.add("input-shake");
+}
+
+function clearError(input, label) {
+  if (!input || !label) return;
+
+  input.classList.remove("is-invalid");
+  input.classList.remove("input-shake");
+
+  label.innerText = "";
+  label.style.display = "none";
+}
+
+function setupClearOnInput(input, errorLabel) {
+    input.addEventListener("input", () => {
+        clearError(input, errorLabel);
+    });
+}
+setupClearOnInput(document.getElementById("trackerNameInput"),
+    document.getElementById("errorCreateTracker"));
+
 loginBtn.onclick = async () => {
   const provider = new GoogleAuthProvider();
   await signInWithRedirect(auth, provider);
 };
 
-getRedirectResult(auth)
-  .then(result => {
-    if (result) {
-      console.log("Login completado vía redirect");
-    }
-  })
-  .catch(error => {
-    console.error(error);
-  });
-
-onAuthStateChanged(auth, user => {
-  if (!user) return;
-  uid = user.uid;
-  loginView.classList.add("d-none");
-  appView.classList.remove("d-none");
-  loadTrackers();
-});
 
 async function loadTrackers() {
   const snap = await getDocs(collection(db, "users", uid, "trackers"));
@@ -53,12 +100,19 @@ function renderTabs() {
   const ul = document.getElementById("trackerTabs");
   ul.innerHTML = "";
 
+  const stored = localStorage.getItem(LS_KEY);
+  console.log('stored', stored);
+  let firstLi = null;
+  let activeSet = false;
+
   trackers.forEach(t => {
     const li = document.createElement("li");
+    if (!firstLi) firstLi = li;
     li.className = "nav-item";
 
     const btn = document.createElement("button");
-    btn.className = "nav-link" + (currentTracker?.id === t.id ? " active" : "");
+    btn.className = "nav-link" + (stored === t.name ? " active" : "");
+    if (stored === t.name) activeSet = true;
     btn.textContent = t.name;
 
     btn.onclick = () => focusTrackerTab(t);
@@ -67,13 +121,14 @@ function renderTabs() {
     ul.appendChild(li);
   });
 
+  if (!activeSet) firstLi?.classList.add("active");
+
 
   const plus = document.createElement("li");
   plus.innerHTML = `<button class="nav-link">+</button>`;
   plus.onclick = () => new bootstrap.Modal("#trackerModal").show();
   ul.appendChild(plus);
 
-  const stored = localStorage.getItem(LS_KEY);
   const found = trackers.find(t => t.name === stored);
   if (found) selectTracker(found);
   else if (trackers.length) selectTracker(trackers[0]);
@@ -113,7 +168,7 @@ async function loadPayments() {
     tr.innerHTML = `
       <td>${i + 1}</td>
       <td>${p.date.toDate().toLocaleDateString()}</td>
-      <td>${p.amount.toFixed(2)}</td>
+      <td class="monto">${p.amount.toFixed(2)}</td>
       <td><button class="btn btn-sm">✎</button></td>
     `;
     tr.querySelector("button").onclick = () => editPayment(d.id, p);
@@ -125,7 +180,20 @@ async function loadPayments() {
 
 document.getElementById("confirmCreateTracker").onclick = async () => {
   const name = document.getElementById("trackerNameInput").value.trim();
-  if (!name || trackers.some(t => t.name === name)) return;
+
+  const input = document.getElementById("trackerNameInput");
+  const errorLabel = document.getElementById("errorCreateTracker");
+
+  clearError(input, errorLabel);
+
+  if (!name) {
+    showError(input, errorLabel, "Se requiere poner algo en Asunto de Pago.")
+    return;
+  }
+  if (trackers.some(t => t.name === name)) {
+    showError(input, errorLabel, "No se puede repetir el Asunto de Pago.");
+    return;
+  }
 
   await addDoc(collection(db, "users", uid, "trackers"), {
     name,
@@ -229,3 +297,13 @@ document.getElementById("trackerFilter").oninput = e => {
     btn.parentElement.style.display = visible ? "" : "none";
   });
 };
+
+document.getElementById("trackerModal").addEventListener("shown.bs.modal", () => {
+  document.getElementById("trackerNameInput").focus();
+  clearError(document.getElementById("trackerNameInput"),
+    document.getElementById("errorCreateTracker"));
+});
+
+document.getElementById("paymentModal").addEventListener("shown.bs.modal", () => {
+  document.getElementById("paymentAmount").focus();
+});

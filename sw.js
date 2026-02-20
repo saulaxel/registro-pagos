@@ -1,4 +1,4 @@
-const CACHE_NAME = "tracker-cache-v2";
+const CACHE_NAME = "tracker-cache-v6";
 
 const FILES_TO_CACHE = [
   "./",
@@ -30,6 +30,18 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
+  const url = new URL(event.request.url);
+
+  // Solo manejar requests de tu mismo origen
+  if (url.origin !== self.location.origin) {
+    return; // Deja que el navegador lo maneje
+  }
+
+  // Solo GET
+  if (event.request.method !== "GET") {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => response || fetch(event.request))

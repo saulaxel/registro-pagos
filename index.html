@@ -8,7 +8,7 @@
   <meta name="description" content="Registro de Pagos">
   <meta name="author" content="Saul Axel">
   <meta name="theme-color" content="#ffffff">
-  
+
   <meta property="og:title" content="Registro de Pagos">
   <meta property="og:description" content="Permite anotar un registro de pagos que des o recibas">
   <meta property="og:type" content="website">
@@ -18,14 +18,14 @@
 
   <!-- Estilos -->
   <link rel="stylesheet" href="styles.css">
-  
+
   <!-- Favicon clásico -->
-  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
-  <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png">
+  <link rel="icon" href="/icons/icon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="/icons/icon-16.png" sizes="16x16" type="image/png">
 
   <!-- Para navegadores modernos -->
-  <link rel="icon" href="/icon-192.png" sizes="192x192" type="image/png">
-  <link rel="icon" href="/icon-512.png" sizes="512x512" type="image/png">
+  <link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="icon" href="/icons/icon-512.png" sizes="512x512" type="image/png">
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -44,7 +44,7 @@
 
   <!-- Filtro -->
   <input id="trackerFilter"
-         class="form-control mb-3"
+         class="form-control mb-3 border border-primary"
          placeholder="Filtrar por Asunto de Pago">
 
   <!-- Tabs -->
@@ -91,6 +91,9 @@
         <input id="trackerNameInput"
                class="form-control"
                placeholder="Asunto de Pago">
+        <div id="errorCreateTracker"
+             class="mt-2 text-danger fw-bold"
+             style="display:none;">
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
